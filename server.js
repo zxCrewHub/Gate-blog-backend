@@ -18,12 +18,28 @@ const dataFilePath = path.join(__dirname, "data.json");
 let posts = JSON.parse(fs.readFileSync(dataFilePath, "utf-8")).chapters;
 
 // Ручка для получения всех постов
+// Ручка для получения всех постов с поддержкой сортировки и фильтрации
 app.get("/blog/post", (req, res) => {
+  const { sortBy, tag } = req.query;
+
+  // Фильтрация по тегу, если параметр tag указан
+  let filteredPosts = tag
+    ? posts.filter((post) => post.tags && post.tags.includes(tag))
+    : [...posts];
+
+  // Сортировка постов по выбранному критерию
+  if (sortBy === "date") {
+    filteredPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } else if (sortBy === "reads") {
+    filteredPosts.sort((a, b) => b.reads - a.reads);
+  }
+
   // Обновляем пути до изображений для каждого поста
-  const postsWithRealImagePaths = posts.map((post) => ({
+  const postsWithRealImagePaths = filteredPosts.map((post) => ({
     ...post,
     imageUrl: `${req.protocol}://${req.get("host")}${post.imageUrl}`,
   }));
+
   res.json(postsWithRealImagePaths);
 });
 
